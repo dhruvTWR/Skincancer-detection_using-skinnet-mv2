@@ -4,7 +4,7 @@ from tensorflow.keras.preprocessing.image import img_to_array
 from PIL import Image
 import numpy as np
 
-model = load_model("skin_cancer_model.h5")  # ya .keras jo tune save kiya ho
+model = load_model("skin_cancer_model.h5") 
 
 def predict(image):
     image = image.resize((224, 224))
