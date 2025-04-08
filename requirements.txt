@@ -1,4 +1,7 @@
 streamlit
-tensorflow
 numpy
-Pillow
+pillow
+tensorflow
+matplotlib
+opencv-python
+fpdf
