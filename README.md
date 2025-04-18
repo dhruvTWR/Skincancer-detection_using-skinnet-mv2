@@ -43,7 +43,7 @@ Clone the repository:
 bash
 Copy
 Edit
-git clone https://github.com/your-username/skin-cancer-classification.git
+git clone https://github.com/dhruvTWR/skin-cancer-classification.git
 cd skin-cancer-classification
 Install dependencies:
 
