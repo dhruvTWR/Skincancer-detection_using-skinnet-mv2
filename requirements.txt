@@ -1,8 +1,7 @@
 streamlit
 tensorflow
-keras
 numpy
-pillow
+Pillow
 matplotlib
-opencv-python-headless
 fpdf
+opencv-python
