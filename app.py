@@ -11,14 +11,24 @@ from fpdf import FPDF
 import base64
 import os
 
-model = load_model("skin_cancer_model.h5")  # Or skin_cancer_model.keras
+# Load your model
+model = load_model("skin_cancer_model.h5")  # Or .keras
 
-def make_gradcam_heatmap(img_array, model, last_conv_layer_name="Conv_1"):
+# 🔍 Automatically detect last convolutional layer
+def find_last_conv_layer(model):
+    for layer in reversed(model.layers):
+        if isinstance(layer, tf.keras.layers.Conv2D):
+            return layer.name
+    raise ValueError("No Conv2D layer found in model.")
+
+# 🔥 Grad-CAM heatmap generation
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     grad_model = Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
-    
+
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        # Handle different output shapes
+        if predictions is None:
+            raise ValueError("Predictions is None. Check model output.")
         if len(predictions.shape) == 2:
             loss = predictions[:, 0]
         else:
@@ -32,7 +42,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name="Conv_1"):
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
 
-
+# 🔁 Overlay heatmap on image
 def overlay_heatmap(image, heatmap, alpha=0.4):
     heatmap = cv2.resize(heatmap, (image.shape[1], image.shape[0]))
     heatmap = np.uint8(255 * heatmap)
@@ -40,6 +50,7 @@ def overlay_heatmap(image, heatmap, alpha=0.4):
     overlayed = cv2.addWeighted(image.astype("uint8"), 1 - alpha, heatmap, alpha, 0)
     return overlayed
 
+# 🔍 Predict and generate Grad-CAM
 def predict(image):
     image_resized = image.resize((224, 224))
     img_array = img_to_array(image_resized) / 255.0
@@ -48,11 +59,13 @@ def predict(image):
     pred = model.predict(img_exp)[0][0]
     label = "Melanoma" if pred > 0.5 else "Benign"
 
-    heatmap = make_gradcam_heatmap(img_exp, model, last_conv_layer_name="Conv_1")
+    last_conv_layer_name = find_last_conv_layer(model)
+    heatmap = make_gradcam_heatmap(img_exp, model, last_conv_layer_name)
     heatmap_overlay = overlay_heatmap((img_array * 255).astype(np.uint8), heatmap)
 
     return label, float(pred), heatmap_overlay
 
+# 🌐 Streamlit UI
 st.title("🩺 Skin Cancer Detection App")
 st.write("Upload a skin lesion image to classify it as Melanoma or Benign with Grad-CAM visualization.")
 
