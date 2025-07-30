@@ -15,9 +15,14 @@ model = load_model("skin_cancer_model.h5")  # Or skin_cancer_model.keras
 
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name="Conv_1"):
     grad_model = Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
+    
     with tf.GradientTape() as tape:
         conv_outputs, predictions = grad_model(img_array)
-        loss = predictions[:, 0]
+        # Handle different output shapes
+        if len(predictions.shape) == 2:
+            loss = predictions[:, 0]
+        else:
+            loss = predictions
 
     grads = tape.gradient(loss, conv_outputs)
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
@@ -26,6 +31,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name="Conv_1"):
     heatmap = tf.squeeze(heatmap)
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
+
 
 def overlay_heatmap(image, heatmap, alpha=0.4):
     heatmap = cv2.resize(heatmap, (image.shape[1], image.shape[0]))
