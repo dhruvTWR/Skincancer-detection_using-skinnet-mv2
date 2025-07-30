@@ -5,3 +5,4 @@ Pillow
 matplotlib
 fpdf
 opencv-python
+keras
