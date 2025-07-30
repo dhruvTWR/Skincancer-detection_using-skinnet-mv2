@@ -23,16 +23,20 @@ def find_last_conv_layer(model):
 
 # 🔥 Grad-CAM heatmap generation
 def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
-    grad_model = Model([model.inputs], [model.get_layer(last_conv_layer_name).output, model.output])
+    grad_model = Model(
+        [model.inputs],
+        [model.get_layer(last_conv_layer_name).output, model.output]
+    )
 
     with tf.GradientTape() as tape:
-        outputs = grad_model(img_array)
-        conv_outputs = outputs[0]
-        predictions = outputs[1]
+        conv_outputs, predictions = grad_model(img_array)
 
-        if predictions is None:
-            raise ValueError("Predictions is None. Check model output.")
+        # 🔐 If predictions is a list, extract first item
+        if isinstance(predictions, list):
+            predictions = predictions[0]
 
+        # 🎯 Handle shape safely
+        predictions = tf.convert_to_tensor(predictions)
         if len(predictions.shape) == 2:
             loss = predictions[:, 0]
         else:
@@ -46,7 +50,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name):
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
 
-
+# 🔁 Overlay heatmap on image
 def overlay_heatmap(image, heatmap, alpha=0.4):
     heatmap = cv2.resize(heatmap, (image.shape[1], image.shape[0]))
     heatmap = np.uint8(255 * heatmap)
